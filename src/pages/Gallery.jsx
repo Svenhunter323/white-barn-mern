@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import ApiService from '../services/api';
+import { useApi } from '../hooks/useApi';
 
 const Gallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Fetch dynamic gallery data from backend
+  const { data: galleryData, loading: galleryLoading } = useApi(() => ApiService.getGalleryImages(), []);
+  const { data: categoriesData, loading: categoriesLoading } = useApi(() => ApiService.getGalleryCategories(), []);
 
-  const categories = [
+  // Fallback categories if API fails
+  const fallbackCategories = [
     { id: 'all', name: 'All Photos' },
     { id: 'weddings', name: 'Weddings' },
     { id: 'ceremonies', name: 'Ceremonies' },
@@ -15,7 +22,8 @@ const Gallery = () => {
     { id: 'gardens', name: 'Gardens' }
   ];
 
-  const galleryImages = [
+  // Fallback gallery images if API fails
+  const fallbackGalleryImages = [
     { id: 1, src: '/images/gallery/gallery1.jpg', category: 'weddings', title: 'Beautiful Wedding Ceremony' },
     { id: 2, src: '/images/gallery/gallery2.jpg', category: 'ceremonies', title: 'Outdoor Ceremony Setup' },
     { id: 3, src: '/images/gallery/gallery3.jpg', category: 'receptions', title: 'Reception Hall' },
@@ -33,6 +41,41 @@ const Gallery = () => {
     { id: 15, src: '/images/banner/banner5.jpg', category: 'gardens', title: 'Garden Views' },
     { id: 16, src: '/images/banner/banner6.jpg', category: 'venue', title: 'Venue Ambiance' }
   ];
+
+  // Process categories data
+  let categories = fallbackCategories;
+  if (categoriesData && Array.isArray(categoriesData.data)) {
+    categories = [
+      { id: 'all', name: 'All Photos' },
+      ...categoriesData.data.map(cat => ({
+        id: cat,
+        name: typeof cat === 'string' 
+          ? cat.charAt(0).toUpperCase() + cat.slice(1) 
+          : 'Category'
+      }))
+    ];
+  }
+
+  // Process gallery images
+  let galleryImages = fallbackGalleryImages;
+  if (galleryData) {
+    try {
+      // Handle both direct array and { data: [...] } formats
+      const imagesArray = Array.isArray(galleryData) 
+        ? galleryData 
+        : (galleryData.data || []);
+      
+      galleryImages = imagesArray.map((img, index) => ({
+        id: img.id || index,
+        src: img.imageUrl || img.src || `fallback-image-${index}`,
+        category: img.category || 'uncategorized',
+        title: img.title || 'Gallery Image',
+        alt: img.alt || ''
+      }));
+    } catch (error) {
+      console.error('Error processing gallery images:', error);
+    }
+  }
 
   const filteredImages = selectedCategory === 'all' 
     ? galleryImages 

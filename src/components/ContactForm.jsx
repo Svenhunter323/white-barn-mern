@@ -1,25 +1,21 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import ApiService from '../services/api';
+import { useApiMutation } from '../hooks/useApi';
 
 const ContactForm = ({ isFooter = true }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { mutate, loading: isSubmitting } = useApiMutation();
 
   const onSubmit = async (data) => {
-    setIsSubmitting(true);
     try {
-      // Replace with your backend API endpoint
-      await axios.post('/api/contact', data);
-      toast.success('Message sent successfully!');
+      await mutate(() => ApiService.submitContactForm(data));
+      toast.success('Message sent successfully! We will get back to you soon.');
       reset();
     } catch (error) {
       toast.error('Failed to send message. Please try again.');
       console.error('Contact form error:', error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

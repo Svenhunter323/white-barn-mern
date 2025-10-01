@@ -1,72 +1,69 @@
 import express from 'express';
+import Gallery from '../models/Gallery.js';
+import asyncHandler from 'express-async-handler';
 
 const router = express.Router();
 
 // @desc    Get gallery images
 // @route   GET /api/gallery
 // @access  Public
-router.get('/', (req, res) => {
-  // For now, return static gallery data
-  // In production, this would come from a database
-  const galleryImages = [
-    {
-      id: 1,
-      src: '/images/gallery/gallery1.jpg',
-      category: 'weddings',
-      title: 'Beautiful Wedding Ceremony',
-      alt: 'Wedding ceremony at The White Barn FL'
-    },
-    {
-      id: 2,
-      src: '/images/gallery/gallery2.jpg',
-      category: 'ceremonies',
-      title: 'Outdoor Ceremony Setup',
-      alt: 'Outdoor ceremony setup'
-    },
-    {
-      id: 3,
-      src: '/images/gallery/gallery3.jpg',
-      category: 'receptions',
-      title: 'Reception Hall',
-      alt: 'Reception hall setup'
-    },
-    {
-      id: 4,
-      src: '/images/gallery/gallery4.jpg',
-      category: 'venue',
-      title: 'Venue Overview',
-      alt: 'Overview of the venue'
-    },
-    {
-      id: 5,
-      src: '/images/gallery/gallery5.jpg',
-      category: 'gardens',
-      title: 'Garden Pathway',
-      alt: 'Beautiful garden pathway'
-    },
-    {
-      id: 6,
-      src: '/images/gallery/gallery6.jpg',
-      category: 'weddings',
-      title: 'Wedding Photography',
-      alt: 'Wedding photography session'
-    }
-  ];
-
-  const category = req.query.category;
-  let filteredImages = galleryImages;
-
+router.get('/', asyncHandler(async (req, res) => {
+  const { category, limit = 20, skip = 0 } = req.query;
+  
+  let query = { isActive: true };
+  
   if (category && category !== 'all') {
-    filteredImages = galleryImages.filter(img => img.category === category);
+    query.category = category;
   }
-
+  
+  const images = await Gallery.find(query)
+    .sort({ order: 1, createdAt: -1 })
+    .skip(parseInt(skip))
+    .limit(parseInt(limit));
+    
+  const total = await Gallery.countDocuments(query);
+  
   res.status(200).json({
     status: 'success',
-    data: {
-      images: filteredImages,
-      total: filteredImages.length
+    data: images,
+    pagination: {
+      total,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
     }
   });
-});
+}));
+
+// @desc    Get gallery categories
+// @route   GET /api/gallery/categories
+// @access  Public
+router.get('/categories', asyncHandler(async (req, res) => {
+  const categories = await Gallery.distinct('category', { isActive: true });
+  
+  res.status(200).json({
+    status: 'success',
+    data: categories
+  });
+}));
+
+// @desc    Get single gallery image
+// @route   GET /api/gallery/:id
+// @access  Public
+router.get('/:id', asyncHandler(async (req, res) => {
+  const image = await Gallery.findById(req.params.id);
+  
+  if (!image) {
+    res.status(404);
+    throw new Error('Image not found');
+  }
+  
+  // Increment view count
+  await image.incrementViews();
+  
+  res.status(200).json({
+    status: 'success',
+    data: image
+  });
+}));
 
 export default router;

@@ -1,0 +1,64 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export const useApi = (apiCall, deps = []) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Memoize the API call to prevent unnecessary re-renders
+  const memoizedApiCall = useCallback(apiCall, deps);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await memoizedApiCall();
+        setData(result);
+      } catch (err) {
+        setError(err.message);
+        console.error('API call failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [memoizedApiCall]);
+
+  const refetch = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await apiCall();
+      setData(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { data, loading, error, refetch };
+};
+
+export const useApiMutation = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const mutate = async (apiCall) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await apiCall();
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { mutate, loading, error };
+};

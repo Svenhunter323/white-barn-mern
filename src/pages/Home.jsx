@@ -6,9 +6,17 @@ import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import ApiService from '../services/api';
+import { useApi } from '../hooks/useApi';
 
 const Home = () => {
-  const bannerImages = [
+  // Fetch dynamic content from backend
+  const { data: homeDetails, loading: homeLoading } = useApi(() => ApiService.getHomeDetails(), []);
+  const { data: apiGalleryImages, loading: galleryLoading } = useApi(() => ApiService.getGalleryImages(), []);
+  const { data: contactDetails, loading: contactLoading } = useApi(() => ApiService.getContactDetails(), []);
+
+  // Fallback banner images if API fails
+  const fallbackBannerImages = [
     '/images/banner/banner1.jpg',
     '/images/banner/banner2.jpg',
     '/images/banner/banner3.jpg',
@@ -16,6 +24,11 @@ const Home = () => {
     '/images/banner/banner5.jpg',
     '/images/banner/banner6.jpg'
   ];
+
+  // Use API data or fallback
+  const bannerImages = Array.isArray(apiGalleryImages) 
+    ? apiGalleryImages.slice(0, 6).map(img => img.src || img.imageUrl) 
+    : fallbackBannerImages;
 
   const services = [
     {
@@ -38,7 +51,8 @@ const Home = () => {
     }
   ];
 
-  const galleryImages = [
+  // Fallback gallery images for preview section
+  const fallbackGalleryImages = [
     '/images/gallery/gallery1.jpg',
     '/images/gallery/gallery2.jpg',
     '/images/gallery/gallery3.jpg',
@@ -46,6 +60,9 @@ const Home = () => {
     '/images/gallery/gallery5.jpg',
     '/images/gallery/gallery6.jpg'
   ];
+
+  // Use API data or fallback for gallery preview
+  const galleryPreviewImages = apiGalleryImages?.data?.images?.slice(6, 12).map(img => img.imageUrl) || fallbackGalleryImages;
 
   const marqueeItems = ['Wedding', 'Party', 'Decoration', 'Catering'];
 
@@ -67,7 +84,7 @@ const Home = () => {
               transition={{ duration: 0.8 }}
               className="heading-primary mb-6"
             >
-              Welcome to The White Barn FL
+              {homeDetails?.data?.heroTitle || "Welcome to The White Barn FL"}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 30 }}
@@ -75,7 +92,7 @@ const Home = () => {
               transition={{ duration: 0.8, delay: 0.3 }}
               className="text-body text-xl mb-8"
             >
-              No matter your dreams, we are here to help you create the perfect event at our venue.
+              {homeDetails?.data?.heroDescription || "No matter your dreams, we are here to help you create the perfect event at our venue."}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -150,16 +167,13 @@ const Home = () => {
               transition={{ duration: 0.8 }}
             >
               <span className="text-primary-500 font-medium uppercase tracking-wider text-sm">
-                WELCOME TO THE WHITE BARN FL
+                {homeDetails?.data?.aboutSection?.subtitle || "WELCOME TO THE WHITE BARN FL"}
               </span>
               <h2 className="heading-secondary mt-4 mb-6">
-                Host Your Beautiful Event with Us
+                {homeDetails?.data?.aboutSection?.title || "Host Your Beautiful Event with Us"}
               </h2>
               <p className="text-body mb-8">
-                A family-owned business with 4.95 acres of botanical paradise immersed with colorful gardens 
-                with lush beautiful flowers and trees, in the heart of the equestrian town of sw ranches. 
-                This upscale and unique nursery specializes in an assortment of colorful bougainvilleas, 
-                and in addition, includes the indoor plant showroom for an assortment of bromeliads.
+                {homeDetails?.data?.aboutSection?.description || "A family-owned business with 4.95 acres of botanical paradise immersed with colorful gardens with lush beautiful flowers and trees, in the heart of the equestrian town of sw ranches. This upscale and unique nursery specializes in an assortment of colorful bougainvilleas, and in addition, includes the indoor plant showroom for an assortment of bromeliads."}
               </p>
               
               <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
@@ -207,13 +221,13 @@ const Home = () => {
             className="text-center mb-16"
           >
             <span className="text-primary-500 font-medium uppercase tracking-wider text-sm">
-              WEDDING SERVICES FOR YOU
+              {homeDetails?.data?.servicesSection?.subtitle || "WEDDING SERVICES FOR YOU"}
             </span>
             <h2 className="heading-secondary mt-4 mb-6">
-              Create Unforgettable Moments at Our Venue
+              {homeDetails?.data?.servicesSection?.title || "Create Unforgettable Moments at Our Venue"}
             </h2>
             <p className="text-body max-w-3xl mx-auto">
-              Your Perfect Day, Our Beautiful Space
+              {homeDetails?.data?.servicesSection?.description || "Your Perfect Day, Our Beautiful Space"}
             </p>
           </motion.div>
 
@@ -283,7 +297,7 @@ const Home = () => {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {galleryImages.map((image, index) => (
+            {galleryPreviewImages.map((image, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}
