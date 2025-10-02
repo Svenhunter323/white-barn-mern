@@ -22,6 +22,7 @@ import uploadRoutes from './routes/upload.js';
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
 
 // Load environment variables
 dotenv.config();
@@ -85,19 +86,58 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/gallery', galleryRoutes);
 
-// Handle undefined routes
-app.all('*', (req, res) => {
+// Handle undefined API routes
+app.all('/api/*', (req, res) => {
   res.status(404).json({
     status: 'error',
     message: `Route ${req.originalUrl} not found`
   });
 });
 
-// Global error handler
+// Serve static files from the React app
+const staticPath = path.join(rootDir, 'dist');
+
+// Serve static files
+app.use(express.static(staticPath, {
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Set proper MIME type for JavaScript modules
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(staticPath, 'index.html'), {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+});
+
+// Error handling middleware
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not when imported for tests)
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    console.log(`Serving static files from: ${staticPath}`);
+  });
+
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err, promise) => {
+    console.error(`Error: ${err.message}`);
+    // Close server & exit process
+    server.close(() => process.exit(1));
+  });
+}
+
+export default app;
