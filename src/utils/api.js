@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import tokenManager from './tokenManager';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -8,7 +9,12 @@ axios.defaults.baseURL = API_BASE_URL;
 // Request interceptor
 axios.interceptors.request.use(
   (config) => {
-    // Add loading state if needed
+    // Add authorization header if token exists
+    const token = tokenManager.getToken();
+    console.log('Axios interceptor - Token:', token ? 'Found' : 'Not found', 'for URL:', config.url);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {

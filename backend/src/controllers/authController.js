@@ -71,24 +71,28 @@ const sendTokenResponse = (admin, statusCode, res, message = 'Success') => {
     sameSite: 'strict'
   };
 
+  const response = {
+    status: 'success',
+    message,
+    token,
+    data: {
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        avatar: admin.avatar,
+        requirePasswordChange: admin.requirePasswordChange,
+        preferences: admin.preferences
+      }
+    }
+  };
+
+  console.log('Sending login response:', JSON.stringify(response, null, 2));
+
   res.status(statusCode)
     .cookie('token', token, options)
-    .json({
-      status: 'success',
-      message,
-      token,
-      data: {
-        admin: {
-          id: admin._id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role,
-          avatar: admin.avatar,
-          requirePasswordChange: admin.requirePasswordChange,
-          preferences: admin.preferences
-        }
-      }
-    });
+    .json(response);
 };
 
 // @desc    Login admin

@@ -25,6 +25,7 @@ router.put('/reset-password/:resettoken', resetPassword);
 router.use(protect); // All routes after this middleware are protected
 
 router.get('/me', getMe);
+router.get('/verify-token', getMe); // Add verify-token route that uses same logic as /me
 router.post('/logout', logout);
 router.put('/profile', updateProfile);
 router.put('/change-password', validatePasswordChange, changePassword);

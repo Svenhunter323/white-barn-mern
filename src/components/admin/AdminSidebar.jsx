@@ -18,43 +18,51 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     {
       title: 'Dashboard',
       icon: FaHome,
-      path: '/admin/dashboard'
+      path: '/admin/dashboard',
+      description: 'Overview & Analytics'
     },
     {
-      title: 'Contacts',
+      title: 'Contact Forms',
       icon: FaEnvelope,
-      path: '/admin/contacts'
+      path: '/admin/contacts',
+      description: 'Customer Inquiries',
+      badge: 'new'
     },
     {
       title: 'Gallery',
       icon: FaImages,
-      path: '/admin/gallery'
+      path: '/admin/gallery',
+      description: 'Photo Management'
     },
     {
       title: 'Reviews',
       icon: FaStar,
-      path: '/admin/reviews'
+      path: '/admin/reviews',
+      description: 'Customer Testimonials'
     },
     {
       title: 'Content',
       icon: FaFileAlt,
       path: '/admin/content',
-      submenu: [
-        { title: 'Home Page', path: '/admin/content/home' },
-        { title: 'About Page', path: '/admin/content/about' },
-        { title: 'Contact Details', path: '/admin/content/contact' },
-        { title: 'Social Links', path: '/admin/content/social' }
-      ]
+      description: 'Website Content'
     },
     {
-      title: 'Admins',
+      title: 'Admin Users',
       icon: FaUsers,
-      path: '/admin/admins'
+      path: '/admin/users',
+      description: 'User Management'
+    },
+    {
+      title: 'Analytics',
+      icon: FaChartBar,
+      path: '/admin/analytics',
+      description: 'Site Statistics'
     },
     {
       title: 'Settings',
       icon: FaCog,
-      path: '/admin/settings'
+      path: '/admin/settings',
+      description: 'System Configuration'
     }
   ];
 
@@ -93,47 +101,56 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <nav className="mt-8">
-          <div className="px-4 space-y-2">
+        <nav className="mt-8 flex-1 overflow-y-auto">
+          <div className="px-4 space-y-1">
             {menuItems.map((item, index) => (
-              <div key={index}>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden ${
                       isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
                     }`
                   }
-                  onClick={() => !item.submenu && onClose()}
+                  onClick={onClose}
                 >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.title}
+                  {({ isActive }) => (
+                    <>
+                      {/* Background animation */}
+                      <div className={`absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 transform transition-transform duration-300 ${
+                        isActive ? 'scale-100' : 'scale-0 group-hover:scale-100'
+                      }`} />
+                      
+                      {/* Content */}
+                      <div className="relative flex items-center w-full">
+                        <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="truncate">{item.title}</span>
+                            {item.badge && (
+                              <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="text-xs opacity-75 truncate mt-0.5">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </NavLink>
-                
-                {/* Submenu */}
-                {item.submenu && (
-                  <div className="ml-8 mt-2 space-y-1">
-                    {item.submenu.map((subItem, subIndex) => (
-                      <NavLink
-                        key={subIndex}
-                        to={subItem.path}
-                        className={({ isActive }) =>
-                          `block px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
-                            isActive
-                              ? 'bg-primary-500 text-white'
-                              : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                          }`
-                        }
-                        onClick={onClose}
-                      >
-                        {subItem.title}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </nav>

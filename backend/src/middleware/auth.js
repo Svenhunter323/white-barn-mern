@@ -13,16 +13,20 @@ export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check for token in Authorization header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Check for token in Authorization header (primary method)
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
+      console.log('Token from Authorization header:', token ? 'Found' : 'Not found');
     }
-    // Check for token in cookies
-    else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
+    // Check for token in cookies (fallback method)
+    else if (req.cookies && (req.cookies.token || req.cookies.admin_token)) {
+      token = req.cookies.token || req.cookies.admin_token;
+      console.log('Token from cookies:', token ? 'Found' : 'Not found');
     }
 
-    if (!token) {
+    // No token found
+    if (!token || token === 'null' || token === 'undefined') {
+      console.log('No valid token provided');
       return res.status(401).json({
         status: 'error',
         message: 'Not authorized, no token provided'
@@ -31,12 +35,15 @@ export const protect = async (req, res, next) => {
 
     try {
       // Verify token
+      console.log('Verifying token...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded successfully:', decoded.id);
       
       // Get admin from token
       const admin = await Admin.findById(decoded.id).select('-password');
       
       if (!admin) {
+        console.log('Admin not found for token');
         return res.status(401).json({
           status: 'error',
           message: 'Not authorized, admin not found'
@@ -45,6 +52,7 @@ export const protect = async (req, res, next) => {
 
       // Check if admin is active
       if (!admin.isActive) {
+        console.log('Admin account is deactivated');
         return res.status(401).json({
           status: 'error',
           message: 'Account is deactivated'
@@ -53,17 +61,19 @@ export const protect = async (req, res, next) => {
 
       // Check if admin account is locked
       if (admin.isLocked) {
+        console.log('Admin account is locked');
         return res.status(423).json({
           status: 'error',
           message: 'Account is temporarily locked due to multiple failed login attempts'
         });
       }
 
+      console.log('Authentication successful for:', admin.email);
       // Add admin to request object
       req.admin = admin;
       next();
-    } catch (error) {
-      console.error('Token verification error:', error);
+    } catch (jwtError) {
+      console.error('JWT verification failed:', jwtError.message);
       return res.status(401).json({
         status: 'error',
         message: 'Not authorized, invalid token'
@@ -138,8 +148,8 @@ export const optionalAuth = async (req, res, next) => {
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
+    } else if (req.cookies && (req.cookies.token || req.cookies.admin_token)) {
+      token = req.cookies.token || req.cookies.admin_token;
     }
 
     if (token) {

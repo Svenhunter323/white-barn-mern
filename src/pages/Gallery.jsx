@@ -67,7 +67,7 @@ const Gallery = () => {
       
       galleryImages = imagesArray.map((img, index) => ({
         id: img.id || index,
-        src: img.imageUrl || img.src || `fallback-image-${index}`,
+        src: img.path || img.url || `fallback-image-${index}`,
         category: img.category || 'uncategorized',
         title: img.title || 'Gallery Image',
         alt: img.alt || ''

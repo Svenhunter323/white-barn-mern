@@ -1,21 +1,65 @@
+import tokenManager from '../utils/tokenManager';
+
+// API base URL with /api prefix
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 class ApiService {
+  constructor() {
+    this.authToken = null;
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
+    tokenManager.setToken(token);
+  }
+
+  getStoredToken() {
+    return tokenManager.getToken();
+  }
+
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
+    
+    // Get token from storage if not set in instance
+    if (!this.authToken) {
+      const storedToken = this.getStoredToken();
+      if (storedToken) {
+        this.authToken = storedToken;
+      }
+    }
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(this.authToken && { 'Authorization': `Bearer ${this.authToken}` }),
+      ...options.headers,
     };
+
+    const config = {
+      ...options,
+      headers,
+      credentials: 'include', // Include cookies for cross-origin requests
+    };
+
+    console.log('API Request:', {
+      url,
+      method: options.method || 'GET',
+      hasToken: !!this.authToken,
+      tokenPreview: this.authToken ? `${this.authToken.substring(0, 20)}...` : 'None'
+    });
 
     try {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If we can't parse the error response, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
